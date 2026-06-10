@@ -9,7 +9,7 @@ public record Event(String artist, String location, LocalDateTime dateTime, Stri
     public String checksum() {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(url.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
+            byte[] hash = md.digest(normalise(url).getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             for (byte b : hash) sb.append(String.format("%02x", b));
             return sb.toString();
@@ -20,5 +20,9 @@ public record Event(String artist, String location, LocalDateTime dateTime, Stri
 
     public String key() {
         return "event:" + checksum();
+    }
+
+    private String normalise(String value) {
+        return value.trim().toLowerCase();
     }
 }

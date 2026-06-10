@@ -21,14 +21,32 @@ class EventTest {
     }
 
     @Test
-    void keyHasBanquetPrefix() {
-        assertTrue(event.key().startsWith("banquet:event:"));
+    void keyHasEventPrefix() {
+        assertTrue(event.key().startsWith("event:"));
     }
 
     @Test
-    void eventsWithSameVenueAndDateButDifferentTimeHaveDistinctKeys() {
-        var matinee = new Event("Artist", "Venue", LocalDateTime.of(2026, 4, 7, 14, 0), "/url");
+    void sameEventWithDifferentParsedTimeSharesKey() {
+        // The midnight-re-notification bug: Ticketmaster drops localTime,
+        // extractor falls back to MIDNIGHT, but the URL is unchanged.
         var evening = new Event("Artist", "Venue", LocalDateTime.of(2026, 4, 7, 19, 0), "/url");
+        var midnight = new Event("Artist", "Venue", LocalDateTime.of(2026, 4, 7, 0, 0), "/url");
+        assertEquals(evening.key(), midnight.key());
+    }
+
+    @Test
+    void doubleShowSameArtistSameVenueSameDayHaveDistinctKeys() {
+        // Two genuine separate performances by the same artist at the same venue
+        // on the same day — each has its own Ticketmaster event URL.
+        var matinee = new Event("Artist", "Venue", LocalDateTime.of(2026, 4, 7, 14, 0), "/url/matinee");
+        var evening = new Event("Artist", "Venue", LocalDateTime.of(2026, 4, 7, 19, 0), "/url/evening");
         assertNotEquals(matinee.key(), evening.key());
+    }
+
+    @Test
+    void differentArtistsSameVenueSameDateHaveDistinctKeys() {
+        var artistA = new Event("Artist A", "Venue", LocalDateTime.of(2026, 4, 7, 19, 0), "/url/a");
+        var artistB = new Event("Artist B", "Venue", LocalDateTime.of(2026, 4, 7, 19, 0), "/url/b");
+        assertNotEquals(artistA.key(), artistB.key());
     }
 }

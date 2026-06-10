@@ -3,22 +3,19 @@ package com.d3bot.events.models;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 public record Event(String artist, String location, LocalDateTime dateTime, String url) {
 
-    private static final DateTimeFormatter FORMATTER = ISO_LOCAL_DATE_TIME;
-
+    /**
+     * Returns a stable hash of the event URL. The URL is the true event identity:
+     * Ticketmaster and Banquet both expose a unique URL per individual performance,
+     * so same-artist/same-venue/same-day double-shows remain distinct while an
+     * event with a missing or flaky time still resolves to the same key.
+     */
     public String checksum() {
-        String input = String.join("|",
-                normalise(location),
-                normalise(FORMATTER.format(dateTime))
-        );
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = md.digest(url.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             for (byte b : hash) sb.append(String.format("%02x", b));
             return sb.toString();
@@ -28,10 +25,6 @@ public record Event(String artist, String location, LocalDateTime dateTime, Stri
     }
 
     public String key() {
-        return "banquet:event:" + checksum();
-    }
-
-    private String normalise(String value) {
-        return value.trim().toLowerCase();
+        return "event:" + checksum();
     }
 }
